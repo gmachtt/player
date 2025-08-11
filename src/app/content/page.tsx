@@ -16,12 +16,49 @@ interface FileItem {
 interface FileWithUrl extends FileItem {
   publicUrl: string;
   signedUrl?: string;
+  isDirectVideo?: false;
 }
 
+interface DirectVideo {
+  id: string;
+  name: string;
+  url: string;
+  publicUrl: string;
+  created_at: string;
+  isDirectVideo: true;
+  metadata?: {
+    mimetype?: string;
+    size?: number;
+  };
+}
+
+type VideoItem = FileWithUrl | DirectVideo;
+
+// Add your embed links here
+const EMBED_LINKS = [
+  "https://www.pornhub.com/embed/66987c55c5e70",
+];
+
+// Map embed links to DirectVideo objects
+const DIRECT_VIDEOS: DirectVideo[] = EMBED_LINKS.map((url) => ({
+  id: crypto.randomUUID(),
+  url,
+  name: url.split("/").pop()?.split(".")[0] || "Untitled Video",
+  publicUrl: url,
+  created_at: new Date().toISOString(),
+  isDirectVideo: true,
+  metadata: {
+    mimetype: "video/mp4",
+  },
+}));
+
 export default function ContentPage() {
-  const [files, setFiles] = useState<FileWithUrl[]>([]);
+  const [storageFiles, setStorageFiles] = useState<FileWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Combine storage files with direct videos
+  const allVideos: VideoItem[] = [...DIRECT_VIDEOS, ...storageFiles];
 
   useEffect(() => {
     fetchFiles();
@@ -39,7 +76,7 @@ export default function ContentPage() {
         throw new Error(data.error || "Failed to fetch files");
       }
 
-      setFiles(data.files || []);
+      setStorageFiles(data.files || []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
@@ -67,14 +104,15 @@ export default function ContentPage() {
     });
   };
 
-  const isVideoFile = (file: FileWithUrl): boolean => {
+  const isVideoFile = (file: VideoItem): boolean => {
+    if (file.isDirectVideo) return true;
     return (
       file.metadata?.mimetype?.startsWith("video/") ||
       /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(file.name)
     );
   };
 
-  const getFileIcon = (file: FileWithUrl): string => {
+  const getFileIcon = (file: VideoItem): string => {
     if (isVideoFile(file)) return "🎬";
     if (file.metadata?.mimetype?.startsWith("image/")) return "🖼️";
     if (file.metadata?.mimetype?.startsWith("audio/")) return "🎵";
@@ -88,7 +126,7 @@ export default function ContentPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-            <p className="mt-4 text-lg">Loading files...</p>
+            <p className="mt-4 text-lg">Loading videos...</p>
           </div>
         </div>
       </div>
@@ -122,11 +160,11 @@ export default function ContentPage() {
         <header className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Video Library</h1>
           <p className="text-lg opacity-70">
-            Browse our video collection ({files.length} videos)
+            Browse our video collection ({allVideos.length} videos)
           </p>
         </header>
 
-        {files.length === 0 ? (
+        {allVideos.length === 0 ? (
           <div className="text-center py-12">
             <div className="mb-4">
               <svg
@@ -150,7 +188,7 @@ export default function ContentPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {files.map((file) => (
+            {allVideos.map((file) => (
               <div
                 key={file.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300"
@@ -158,17 +196,29 @@ export default function ContentPage() {
                 {/* Video Preview */}
                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative flex items-center justify-center">
                   {isVideoFile(file) ? (
-                    <video
-                      className="w-full h-full object-cover"
-                      controls
-                      preload="metadata"
-                    >
-                      <source
-                        src={file.publicUrl}
-                        type={file.metadata?.mimetype || "video/mp4"}
+                    file.isDirectVideo ? (
+                      <iframe
+                        src={file.url}
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        scrolling="no"
+                        allowFullScreen
+                        className="absolute inset-0"
                       />
-                      Your browser does not support the video tag.
-                    </video>
+                    ) : (
+                      <video
+                        className="w-full h-full object-cover"
+                        controls
+                        preload="metadata"
+                      >
+                        <source
+                          src={file.publicUrl}
+                          type={file.metadata?.mimetype || "video/mp4"}
+                        />
+                        Your browser does not support the video tag.
+                      </video>
+                    )
                   ) : (
                     <div className="text-6xl opacity-50">
                       {getFileIcon(file)}
@@ -183,18 +233,25 @@ export default function ContentPage() {
                     title={file.name}
                   >
                     {getFileIcon(file)} {file.name}
+                    {file.isDirectVideo && (
+                      <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                        External
+                      </span>
+                    )}
                   </h3>
 
                   <div className="space-y-2 text-sm opacity-70">
-                    <div className="flex justify-between">
-                      <span>Size:</span>
-                      <span>{formatFileSize(file.metadata?.size || 0)}</span>
-                    </div>
+                    {file.metadata?.size && (
+                      <div className="flex justify-between">
+                        <span>Size:</span>
+                        <span>{formatFileSize(file.metadata?.size || 0)}</span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between">
                       <span>Type:</span>
                       <span className="truncate ml-2">
-                        {file.metadata?.mimetype || "unknown"}
+                        {file.metadata?.mimetype || "video/mp4"}
                       </span>
                     </div>
 
