@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -94,6 +94,63 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("POST error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const fileName = searchParams.get("fileName");
+    const isDirectVideo = searchParams.get("isDirectVideo") === "true";
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    // If it's a direct video link, delete from database
+    if (isDirectVideo) {
+      const { error } = await supabaseAdmin
+        .from("video_links")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Database delete error:", error);
+        return NextResponse.json(
+          { error: `Failed to delete video link: ${error.message}` },
+          { status: 500 }
+        );
+      }
+    } else {
+      // If it's a storage file, delete from storage bucket
+      if (!fileName) {
+        return NextResponse.json(
+          { error: "File name is required for storage files" },
+          { status: 400 }
+        );
+      }
+
+      const { error } = await supabaseAdmin.storage
+        .from("videos")
+        .remove([fileName]);
+
+      if (error) {
+        console.error("Storage delete error:", error);
+        return NextResponse.json(
+          { error: `Failed to delete file: ${error.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
