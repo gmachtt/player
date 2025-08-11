@@ -23,8 +23,8 @@ interface DirectVideo {
   id: string;
   name: string;
   url: string;
-  publicUrl: string;
   created_at: string;
+  publicUrl: string;
   isDirectVideo: true;
   metadata?: {
     mimetype?: string;
@@ -34,37 +34,18 @@ interface DirectVideo {
 
 type VideoItem = FileWithUrl | DirectVideo;
 
-// Add your embed links here
-const EMBED_LINKS = [
-  "https://www.pornhub.com/embed/66987c55c5e70",
-];
-
-// Map embed links to DirectVideo objects
-const DIRECT_VIDEOS: DirectVideo[] = EMBED_LINKS.map((url) => ({
-  id: crypto.randomUUID(),
-  url,
-  name: url.split("/").pop()?.split(".")[0] || "Untitled Video",
-  publicUrl: url,
-  created_at: new Date().toISOString(),
-  isDirectVideo: true,
-  metadata: {
-    mimetype: "video/mp4",
-  },
-}));
-
 export default function ContentPage() {
-  const [storageFiles, setStorageFiles] = useState<FileWithUrl[]>([]);
+  const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Combine storage files with direct videos
-  const allVideos: VideoItem[] = [...DIRECT_VIDEOS, ...storageFiles];
+  const [newVideoUrl, setNewVideoUrl] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    fetchFiles();
+    fetchVideos();
   }, []);
 
-  const fetchFiles = async () => {
+  const fetchVideos = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -73,16 +54,44 @@ export default function ContentPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch files");
+        throw new Error(data.error || "Failed to fetch videos");
       }
 
-      setStorageFiles(data.files || []);
+      setAllVideos(data.files || []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addVideoLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newVideoUrl.trim()) return;
+
+    try {
+      setIsAdding(true);
+
+      const response = await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: newVideoUrl.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to add video link");
+      }
+
+      setNewVideoUrl("");
+      await fetchVideos(); // Refresh the list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add video link");
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -143,7 +152,7 @@ export default function ContentPage() {
               <p>{error}</p>
             </div>
             <button
-              onClick={fetchFiles}
+              onClick={fetchVideos}
               className="bg-foreground text-background px-4 py-2 rounded hover:bg-opacity-80 transition-colors"
             >
               Try Again
@@ -163,6 +172,29 @@ export default function ContentPage() {
             Browse our video collection ({allVideos.length} videos)
           </p>
         </header>
+
+        {/* Add Video Form */}
+        <div className="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold mb-4">Add New Video Link</h2>
+          <form onSubmit={addVideoLink} className="flex gap-2">
+            <input
+              type="url"
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+              placeholder="Enter video embed URL..."
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-foreground"
+              disabled={isAdding}
+              required
+            />
+            <button
+              type="submit"
+              disabled={isAdding || !newVideoUrl.trim()}
+              className="px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAdding ? "Adding..." : "Add Video"}
+            </button>
+          </form>
+        </div>
 
         {allVideos.length === 0 ? (
           <div className="text-center py-12">
@@ -187,30 +219,33 @@ export default function ContentPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {allVideos.map((file) => (
               <div
                 key={file.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300"
               >
                 {/* Video Preview */}
-                <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative flex items-center justify-center">
+                <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative w-full">
                   {isVideoFile(file) ? (
                     file.isDirectVideo ? (
-                      <iframe
-                        src={file.url}
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        scrolling="no"
-                        allowFullScreen
-                        className="absolute inset-0"
-                      />
+                      <div className="relative w-full h-0 pb-[56.25%]">
+                        <iframe
+                          src={file.url}
+                          className="absolute top-0 left-0 w-full h-full"
+                          frameBorder="0"
+                          scrolling="no"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          loading="lazy"
+                        />
+                      </div>
                     ) : (
                       <video
                         className="w-full h-full object-cover"
                         controls
                         preload="metadata"
+                        playsInline
                       >
                         <source
                           src={file.publicUrl}
@@ -220,16 +255,16 @@ export default function ContentPage() {
                       </video>
                     )
                   ) : (
-                    <div className="text-6xl opacity-50">
+                    <div className="text-6xl opacity-50 flex items-center justify-center h-full">
                       {getFileIcon(file)}
                     </div>
                   )}
                 </div>
 
                 {/* File Info */}
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <h3
-                    className="font-semibold text-lg mb-2 truncate"
+                    className="font-semibold text-base sm:text-lg mb-2 truncate"
                     title={file.name}
                   >
                     {getFileIcon(file)} {file.name}
@@ -240,7 +275,7 @@ export default function ContentPage() {
                     )}
                   </h3>
 
-                  <div className="space-y-2 text-sm opacity-70">
+                  <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm opacity-70">
                     {file.metadata?.size && (
                       <div className="flex justify-between">
                         <span>Size:</span>
@@ -262,12 +297,12 @@ export default function ContentPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-3 sm:mt-4 flex gap-2">
                     <a
                       href={file.publicUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-foreground text-background text-center py-2 px-4 rounded hover:bg-opacity-80 transition-colors text-sm font-medium"
+                      className="flex-1 bg-foreground text-background text-center py-1.5 sm:py-2 px-3 sm:px-4 rounded text-xs sm:text-sm font-medium hover:bg-opacity-80 transition-colors"
                     >
                       Open Video
                     </a>
@@ -275,7 +310,7 @@ export default function ContentPage() {
                       onClick={() =>
                         navigator.clipboard.writeText(file.publicUrl)
                       }
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="p-1.5 sm:p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       title="Copy URL"
                     >
                       <svg
@@ -302,7 +337,7 @@ export default function ContentPage() {
         {/* Refresh Button */}
         <div className="mt-8 text-center">
           <button
-            onClick={fetchFiles}
+            onClick={fetchVideos}
             disabled={loading}
             className="bg-foreground text-background px-6 py-2 rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
