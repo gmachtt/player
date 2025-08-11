@@ -49,6 +49,150 @@ export default function ContentPage() {
     fetchVideos();
   }, []);
 
+  // Convert various video URLs to embeddable format
+  const getEmbedUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+
+      // YouTube URLs
+      if (
+        urlObj.hostname.includes("youtube.com") ||
+        urlObj.hostname.includes("youtu.be")
+      ) {
+        let videoId = "";
+
+        if (urlObj.hostname.includes("youtu.be")) {
+          // Short URL format: https://youtu.be/VIDEO_ID
+          videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes("youtube.com")) {
+          // Long URL format: https://www.youtube.com/watch?v=VIDEO_ID
+          videoId = urlObj.searchParams.get("v") || "";
+        }
+
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+
+      // Yandex Video URLs - return original URL as they require authentication for embedding
+      if (urlObj.hostname.includes("yandex")) {
+        return url;
+      }
+
+      // Vimeo URLs
+      if (urlObj.hostname.includes("vimeo.com")) {
+        const videoId = urlObj.pathname.split("/").pop();
+        if (videoId) {
+          return `https://player.vimeo.com/video/${videoId}`;
+        }
+      }
+
+      // Dailymotion URLs
+      if (urlObj.hostname.includes("dailymotion.com")) {
+        const videoId = urlObj.pathname.split("/video/")[1]?.split("_")[0];
+        if (videoId) {
+          return `https://www.dailymotion.com/embed/video/${videoId}`;
+        }
+      }
+
+      // Twitch URLs
+      if (urlObj.hostname.includes("twitch.tv")) {
+        const videoId = urlObj.pathname.split("/videos/")[1];
+        if (videoId) {
+          return `https://player.twitch.tv/?video=${videoId}&parent=${window.location.hostname}`;
+        }
+      }
+
+      // If no conversion needed or recognized, return original URL
+      return url;
+    } catch (error) {
+      // If URL parsing fails, return original URL
+      return url;
+    }
+  };
+
+  // Check if video should be embedded or opened in new tab
+  const shouldEmbedVideo = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      // Return false for Yandex videos as they require authentication
+      return !urlObj.hostname.includes("yandex");
+    } catch (error) {
+      return true;
+    }
+  };
+
+  // Get video platform name for display
+  const getVideoPlatform = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+
+      if (
+        urlObj.hostname.includes("youtube.com") ||
+        urlObj.hostname.includes("youtu.be")
+      ) {
+        return "YouTube";
+      }
+      if (urlObj.hostname.includes("yandex")) {
+        return "Yandex Video";
+      }
+      if (urlObj.hostname.includes("vimeo.com")) {
+        return "Vimeo";
+      }
+      if (urlObj.hostname.includes("dailymotion.com")) {
+        return "Dailymotion";
+      }
+      if (urlObj.hostname.includes("twitch.tv")) {
+        return "Twitch";
+      }
+
+      return "External";
+    } catch (error) {
+      return "External";
+    }
+  };
+
+  // Extract video title from URL
+  const getVideoTitle = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+
+      // For YouTube, try to extract from URL parameters or use video ID
+      if (
+        urlObj.hostname.includes("youtube.com") ||
+        urlObj.hostname.includes("youtu.be")
+      ) {
+        let videoId = "";
+
+        if (urlObj.hostname.includes("youtu.be")) {
+          videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes("youtube.com")) {
+          videoId = urlObj.searchParams.get("v") || "";
+        }
+
+        return videoId ? `YouTube Video (${videoId})` : "YouTube Video";
+      }
+
+      // For Yandex Video
+      if (urlObj.hostname.includes("yandex.com")) {
+        const pathParts = urlObj.pathname.split("/");
+        const videoId = pathParts[pathParts.length - 1];
+        return videoId ? `Yandex Video (${videoId})` : "Yandex Video";
+      }
+
+      // For other platforms, use pathname or hostname
+      if (urlObj.hostname.includes("vimeo.com")) {
+        const videoId = urlObj.pathname.split("/").pop();
+        return videoId ? `Vimeo Video (${videoId})` : "Vimeo Video";
+      }
+
+      // Fallback to hostname
+      return urlObj.hostname.replace("www.", "");
+    } catch (error) {
+      return url.split("/").pop()?.split(".")[0] || "Untitled Video";
+    }
+  };
+
   const fetchVideos = async () => {
     try {
       setLoading(true);
@@ -331,13 +475,17 @@ export default function ContentPage() {
 
         {/* Add Video Link Form */}
         <div className="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold mb-4">Add New Video Link</h2>
+          <h2 className="text-xl font-semibold mb-4">Add Video Link</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Supports YouTube, Vimeo, Dailymotion, Twitch, Yandex Video, and
+            direct video URLs
+          </p>
           <form onSubmit={addVideoLink} className="flex gap-2">
             <input
               type="url"
               value={newVideoUrl}
               onChange={(e) => setNewVideoUrl(e.target.value)}
-              placeholder="Enter video embed URL..."
+              placeholder="Enter video URL (e.g., https://www.youtube.com/watch?v=k0WfnIRLvr4)"
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-foreground"
               disabled={isAdding}
               required
@@ -385,17 +533,37 @@ export default function ContentPage() {
                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative w-full">
                   {isVideoFile(file) ? (
                     file.isDirectVideo ? (
-                      <div className="relative w-full h-0 pb-[56.25%]">
-                        <iframe
-                          src={file.url}
-                          className="absolute top-0 left-0 w-full h-full"
-                          frameBorder="0"
-                          scrolling="no"
-                          allowFullScreen
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          loading="lazy"
-                        />
-                      </div>
+                      shouldEmbedVideo(file.url) ? (
+                        <div className="relative w-full h-0 pb-[56.25%]">
+                          <iframe
+                            src={getEmbedUrl(file.url)}
+                            className="absolute top-0 left-0 w-full h-full"
+                            frameBorder="0"
+                            scrolling="no"
+                            allowFullScreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        // For non-embeddable videos (like Yandex), show a preview with link
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                          <div className="text-6xl mb-4">
+                            {getFileIcon(file)}
+                          </div>
+                          <p className="text-sm mb-2">
+                            {getVideoPlatform(file.url)} video
+                          </p>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-foreground text-background px-4 py-2 rounded hover:bg-opacity-80 transition-colors text-sm"
+                          >
+                            Open in {getVideoPlatform(file.url)}
+                          </a>
+                        </div>
+                      )
                     ) : (
                       <video
                         className="w-full h-full object-cover"
@@ -421,12 +589,15 @@ export default function ContentPage() {
                 <div className="p-3 sm:p-4">
                   <h3
                     className="font-semibold text-base sm:text-lg mb-2 truncate"
-                    title={file.name}
+                    title={
+                      file.isDirectVideo ? getVideoTitle(file.url) : file.name
+                    }
                   >
-                    {getFileIcon(file)} {file.name}
+                    {getFileIcon(file)}{" "}
+                    {file.isDirectVideo ? getVideoTitle(file.url) : file.name}
                     {file.isDirectVideo && (
                       <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        External
+                        {getVideoPlatform(file.url)}
                       </span>
                     )}
                   </h3>
@@ -442,7 +613,9 @@ export default function ContentPage() {
                     <div className="flex justify-between">
                       <span>Type:</span>
                       <span className="truncate ml-2">
-                        {file.metadata?.mimetype || "video/mp4"}
+                        {file.isDirectVideo
+                          ? getVideoPlatform(file.url)
+                          : file.metadata?.mimetype || "video/mp4"}
                       </span>
                     </div>
 
@@ -460,7 +633,7 @@ export default function ContentPage() {
                       rel="noopener noreferrer"
                       className="flex-1 bg-foreground text-background text-center py-1.5 sm:py-2 px-3 sm:px-4 rounded text-xs sm:text-sm font-medium hover:bg-opacity-80 transition-colors"
                     >
-                      Open Video
+                      {file.isDirectVideo ? "Open Original" : "Open Video"}
                     </a>
                     <button
                       onClick={() =>
