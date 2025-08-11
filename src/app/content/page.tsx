@@ -40,6 +40,9 @@ export default function ContentPage() {
   const [error, setError] = useState<string | null>(null);
   const [newVideoUrl, setNewVideoUrl] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   useEffect(() => {
     fetchVideos();
@@ -92,6 +95,68 @@ export default function ContentPage() {
       setError(err instanceof Error ? err.message : "Failed to add video link");
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if it's a video file
+      if (!file.type.startsWith("video/")) {
+        setError("Please select a video file");
+        return;
+      }
+
+      // Check file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        setError("File size must be less than 50MB");
+        return;
+      }
+
+      setSelectedFile(file);
+      setError(null);
+    }
+  };
+
+  const uploadVideo = async () => {
+    if (!selectedFile) return;
+
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/videos/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload video");
+      }
+
+      // Clear the selected file
+      setSelectedFile(null);
+
+      // Reset file input
+      const fileInput = document.getElementById(
+        "video-file-input"
+      ) as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+
+      // Refresh the video list
+      await fetchVideos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload video");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -173,7 +238,54 @@ export default function ContentPage() {
           </p>
         </header>
 
-        {/* Add Video Form */}
+        {/* Upload Video Form */}
+        <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold mb-4">Upload Video File</h2>
+          <div className="space-y-4">
+            <div>
+              <input
+                id="video-file-input"
+                type="file"
+                accept="video/*"
+                onChange={handleFileSelect}
+                className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-foreground file:text-background hover:file:bg-opacity-80 file:cursor-pointer"
+                disabled={isUploading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Supported formats: MP4, WebM, MOV, AVI (Max: 50MB)
+              </p>
+            </div>
+
+            {selectedFile && (
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatFileSize(selectedFile.size)}
+                  </p>
+                </div>
+                <button
+                  onClick={uploadVideo}
+                  disabled={isUploading}
+                  className="px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? "Uploading..." : "Upload Video"}
+                </button>
+              </div>
+            )}
+
+            {isUploading && uploadProgress > 0 && (
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-foreground h-2 rounded-full transition-all"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add Video Link Form */}
         <div className="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold mb-4">Add New Video Link</h2>
           <form onSubmit={addVideoLink} className="flex gap-2">
