@@ -385,10 +385,10 @@ export default function ContentPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-            <p className="mt-4 text-lg">Loading videos...</p>
+            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-foreground"></div>
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg">Loading videos...</p>
           </div>
         </div>
       </div>
@@ -398,15 +398,15 @@ export default function ContentPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
           <div className="text-center">
-            <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded mb-4">
-              <p className="font-bold">Error</p>
-              <p>{error}</p>
+            <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded mb-4 mx-auto max-w-lg">
+              <p className="font-bold text-base sm:text-lg mb-1">Error</p>
+              <p className="text-sm sm:text-base">{error}</p>
             </div>
             <button
               onClick={fetchVideos}
-              className="bg-foreground text-background px-4 py-2 rounded hover:bg-opacity-80 transition-colors"
+              className="bg-foreground text-background px-4 sm:px-6 py-2 sm:py-3 rounded hover:bg-opacity-80 transition-colors text-sm sm:text-base font-medium"
             >
               Try Again
             </button>
@@ -418,44 +418,50 @@ export default function ContentPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Video Library</h1>
-          <p className="text-lg opacity-70">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+        <header className="mb-6 sm:mb-8 lg:mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
+            Video Library
+          </h1>
+          <p className="text-base sm:text-lg opacity-70">
             Browse our video collection ({allVideos.length} videos)
           </p>
         </header>
 
         {/* Upload Video Form */}
-        <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold mb-4">Upload Video File</h2>
-          <div className="space-y-4">
+        <div className="mb-4 sm:mb-6 lg:mb-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3 sm:mb-4">
+            Upload Video File
+          </h2>
+          <div className="space-y-3 sm:space-y-4">
             <div>
               <input
                 id="video-file-input"
                 type="file"
                 accept="video/*"
                 onChange={handleFileSelect}
-                className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-foreground file:text-background hover:file:bg-opacity-80 file:cursor-pointer"
+                className="block w-full text-sm sm:text-base text-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-foreground file:text-background hover:file:bg-opacity-80 file:cursor-pointer"
                 disabled={isUploading}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
                 Supported formats: MP4, WebM, MOV, AVI (Max: 50MB)
               </p>
             </div>
 
             {selectedFile && (
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm sm:text-base font-medium truncate">
+                    {selectedFile.name}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500">
                     {formatFileSize(selectedFile.size)}
                   </p>
                 </div>
                 <button
                   onClick={uploadVideo}
                   disabled={isUploading}
-                  className="px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                   {isUploading ? "Uploading..." : "Upload Video"}
                 </button>
@@ -474,26 +480,30 @@ export default function ContentPage() {
         </div>
 
         {/* Add Video Link Form */}
-        <div className="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold mb-4">Add Video Link</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Supports YouTube, Vimeo, Dailymotion, Twitch, Yandex Video, and
-            direct video URLs
+        <div className="mb-6 sm:mb-8 lg:mb-10 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3 sm:mb-4">
+            Add Video Link
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Supports YouTube, Vimeo, Dailymotion, Twitch and direct video URLs
           </p>
-          <form onSubmit={addVideoLink} className="flex gap-2">
+          <form
+            onSubmit={addVideoLink}
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+          >
             <input
               type="url"
               value={newVideoUrl}
               onChange={(e) => setNewVideoUrl(e.target.value)}
               placeholder="Enter video URL (e.g., https://www.youtube.com/watch?v=k0WfnIRLvr4)"
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-foreground"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-foreground text-sm sm:text-base"
               disabled={isAdding}
               required
             />
             <button
               type="submit"
               disabled={isAdding || !newVideoUrl.trim()}
-              className="px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-4 py-2 bg-foreground text-background rounded hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {isAdding ? "Adding..." : "Add Video"}
             </button>
@@ -501,10 +511,10 @@ export default function ContentPage() {
         </div>
 
         {allVideos.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="mb-4">
+          <div className="text-center py-8 sm:py-12">
+            <div className="mb-4 sm:mb-6">
               <svg
-                className="mx-auto h-12 w-12 opacity-50"
+                className="mx-auto h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 opacity-50"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -517,17 +527,17 @@ export default function ContentPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-medium mb-2">No videos found</h3>
-            <p className="opacity-70">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-medium mb-2 sm:mb-3">No videos found</h3>
+            <p className="text-sm sm:text-base opacity-70">
               No videos are currently available in the library.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {allVideos.map((file) => (
               <div
                 key={file.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 flex flex-col"
               >
                 {/* Video Preview */}
                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative w-full">
@@ -547,18 +557,18 @@ export default function ContentPage() {
                         </div>
                       ) : (
                         // For non-embeddable videos (like Yandex), show a preview with link
-                        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
-                          <div className="text-6xl mb-4">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-3 sm:p-4 text-center">
+                          <div className="text-4xl sm:text-5xl lg:text-6xl mb-2 sm:mb-4">
                             {getFileIcon(file)}
                           </div>
-                          <p className="text-sm mb-2">
+                          <p className="text-xs sm:text-sm mb-2">
                             {getVideoPlatform(file.url)} video
                           </p>
                           <a
                             href={file.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-foreground text-background px-4 py-2 rounded hover:bg-opacity-80 transition-colors text-sm"
+                            className="bg-foreground text-background px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-opacity-80 transition-colors text-xs sm:text-sm"
                           >
                             Open in {getVideoPlatform(file.url)}
                           </a>
@@ -579,16 +589,16 @@ export default function ContentPage() {
                       </video>
                     )
                   ) : (
-                    <div className="text-6xl opacity-50 flex items-center justify-center h-full">
+                    <div className="text-4xl sm:text-5xl lg:text-6xl opacity-50 flex items-center justify-center h-full">
                       {getFileIcon(file)}
                     </div>
                   )}
                 </div>
 
                 {/* File Info */}
-                <div className="p-3 sm:p-4">
+                <div className="p-3 sm:p-4 flex-1 flex flex-col">
                   <h3
-                    className="font-semibold text-base sm:text-lg mb-2 truncate"
+                    className="font-semibold text-sm sm:text-base lg:text-lg mb-2 truncate"
                     title={
                       file.isDirectVideo ? getVideoTitle(file.url) : file.name
                     }
@@ -596,13 +606,13 @@ export default function ContentPage() {
                     {getFileIcon(file)}{" "}
                     {file.isDirectVideo ? getVideoTitle(file.url) : file.name}
                     {file.isDirectVideo && (
-                      <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                      <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
                         {getVideoPlatform(file.url)}
                       </span>
                     )}
                   </h3>
 
-                  <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm opacity-70">
+                  <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm opacity-70 flex-1">
                     {file.metadata?.size && (
                       <div className="flex justify-between">
                         <span>Size:</span>
@@ -643,7 +653,7 @@ export default function ContentPage() {
                       title="Copy URL"
                     >
                       <svg
-                        className="w-4 h-4"
+                        className="w-3 h-3 sm:w-4 sm:h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -663,10 +673,10 @@ export default function ContentPage() {
                       title="Delete Video"
                     >
                       {deletingId === file.id ? (
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <svg
-                          className="w-4 h-4"
+                          className="w-3 h-3 sm:w-4 sm:h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -688,11 +698,11 @@ export default function ContentPage() {
         )}
 
         {/* Refresh Button */}
-        <div className="mt-8 text-center">
+        <div className="mt-6 sm:mt-8 lg:mt-12 text-center">
           <button
             onClick={fetchVideos}
             disabled={loading}
-            className="bg-foreground text-background px-6 py-2 rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-foreground text-background px-6 py-2 sm:py-3 rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium"
           >
             {loading ? "Loading..." : "Refresh Videos"}
           </button>
