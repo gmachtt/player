@@ -1,0 +1,629 @@
+
+    Docs
+    API
+
+Introduction
+
+media.cm provides a simple HTTP API to integrate ours into your business or application. Authorization requires API key, which you can find in your account.
+The Base-URL for all API calls:
+https://media.cm/api
+
+Notice
+
+	All requests to the API shall be HTTP GET or POST
+	Use the API with https only, http requests will result in a HTTP 302 redirect to https.
+	Most requests require an API Key.
+	Response is always in JSON-Format.
+
+Status code
+
+200 	Everything is OK. Request succeeded
+400 	Bad request (e.g. wrong parameters)
+403 	Permission denied
+404 	File not found
+451 	Unavailable
+509 	Bandwidth usage exceeded
+50x 	50x: Server errors 
+
+
+    API
+    Account Information
+
+GET
+https://media.cm/api/account/info?key=key
+
+Parameters 	Description 	Example 	format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+cURL example
+
+
+curl --include \
+'https://media.cm/api/account/info?key=1ltghrilhllgrx2b2'
+              
+
+Response
+
+
+{
+  "msg": "OK",
+  "server_time": "2022-02-12 21:18:00",
+   "status": 200,
+   "result": {
+      "files_total":"62",
+      "storage_left":19882932614,
+      "login":"neo",
+      "email": "name@mail.com",
+      "premium_expire":"2022-01-22 22:18:00",
+      "balance":"8.00000",
+      "premium":1,
+      "storage_used":"54126265"
+   }
+}
+              
+
+Status code
+
+200 	Everything is OK. Request succeeded
+400 	Bad request (e.g. wrong parameters)
+403 	Permission denied
+404 	File not found
+451 	Unavailable
+509 	Bandwidth usage exceeded
+50x 	50x: Server errors 
+
+
+    API
+    Account Statistics
+
+GET
+https://media.cm/api/account/stats?key=key&last=last
+
+Parameters 	Description 	Example 	format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+last 	Last x days report 	7 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/account/stats?key=1ltghrilhllgrx2b2&last=7'
+              
+
+Response
+
+
+{
+  "msg": "OK",
+  "server_time": "2022-01-22 22:53:07",
+  "status": 200,
+  "result": [
+    {
+      "downloads": "0",
+      "profit_views": "0.00000",
+      "views_adb": "1",
+      "sales": "0",
+      "profit_sales": "0.00000",
+      "profit_refs": "0.00000",
+      "profit_site": "0.00000",
+      "views": "0",
+      "refs": "0",
+      "day": "2022-01-22",
+      "profit_total": "0.00000",
+      "views_prem": "0"
+    }
+  ]
+}
+              
+
+    API
+    Deleted Videos
+
+GET
+https://media.cm/api/file/deleted?key=key&last=last
+
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+last 	Amount files to show 	20 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/deleted?key=1ltghrilhllgrx2b2&last=20'
+              
+
+Response
+
+
+{
+  "msg":"OK",
+  "server_time":"2022-01-23 04:28:53",
+  "status":200,
+  "result":
+ [
+   {
+  "file_code":"jfru5kl9dhrt",
+  "name":"video.mp4",
+  "deleted":"2022-01-23 20:00:01",
+  "deleted_ago_sec":"435316"
+},
+{
+  "file_code":"jfru5kl9dhrt",
+  "name":"video.mp4",
+  "deleted":"2022-01-23 20:30:02"
+  "deleted_ago_sec":"434516"
+      }
+    ]
+  }
+              
+
+    API
+    Upload Server
+
+GET upload server
+https://media.cm/api/upload/server?key=key
+
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+Response
+
+
+{
+"msg": "OK",
+"server_time": "2022-01-23 11:24:54",
+"status": 200,
+"result": "http://01.media.cm/upload/01"
+}
+              
+
+Upload File
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+file 	Video file(s) 	video.mp4 	FILE 	yes
+file_title 	Title of video 	Video title 	STRING 	no
+file_descr 	Description of video 	Video 2022 	STRING 	no
+snapshot 	Custom snapshot (up to 800KB) 	image.jpg 	FILE 	no
+fld_id 	Folder ID 	2 	INT 	no
+cat_id 	Category ID 	6 	INT 	no
+tags 	Tags list 	today, popular 	STRING 	no
+file_public 	Public flag 	1 	INT 	no
+html_redirect 	HTML redirect output instead of JSON 	1 	INT 	no
+Upload example
+cURL
+
+
+curl -X POST -F 'api_key=1ltghrilhllgrx2b2' -F 'file=@video.mp4' https://01.media.cm/upload/01
+          
+
+Upload with custom title and snapshot
+
+
+curl -X POST -F 'key=1ltghrilhllgrx2b2' -F 'file_title="My-new-video"' -F 'file=@video.mp4' -F 'snapshot=@image.jpg' https://01.media.cm/upload/01
+                
+
+Response
+
+
+{
+  "msg": "OK",
+  "status": 200,
+  "files": [{
+  "filecode": "fj8rokd08fjk4",
+  "filename": "video.avi",
+  "status": "OK"
+}, {
+  "filecode": "fjrieo5kmf8ep",
+  "filename": "video.mp4",
+  "status": "OK"
+   }]
+}
+                  
+
+HTML
+
+
+<form enctype="multipart/form-data" action="https://01.media.cm/upload/01" method="post">
+<input type="hidden" name="api_key" value="1ltghrilhllgrx2b2">
+<input name="file" type="file">
+<input type="submit">
+</form>
+                
+
+    API
+    Remote upload
+
+GET
+https://media.cm/api/upload/url?key=key&url=url
+
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+url 	URL to video 	https://site.com/video.mkv 	STRING 	yes
+fld_id 	Folder ID 	2 	INT 	no
+cat_id 	Category ID 	6 	INT 	no
+tags 	Tags list 	today, popular 	STRING 	no
+file_public 	Public flag 	1 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/upload/url?key=1ltghrilhllgrx2b2&url=https://site.com/video.mkv'
+              
+
+Response
+
+
+{
+ "msg": "OK",
+ "server_time": "2022-01-23 04:29:54",
+ "status": 200,
+ "result": {
+ "filecode": "fkrieo7khm8i"
+  }
+}
+              
+
+    API
+    Video Info
+
+GET
+https://media.cm/api/file/info?key=key&file_code=file_code
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+file_code 	Single or multiple file code 	fheu5klo9dw0,eurjmf9girhw 	STRING 	yes
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/info?key=1ltghrilhllgrx2b2file_code=fheu5klo9dw0'
+              
+
+Response
+
+
+
+              {
+                "msg": "OK",
+                "server_time": "2022-01-23 14:53:53",
+                "status": 200,
+                "result": [
+                  {
+                    "status": 200,
+                    "filecode": "fheu5klo9dw0",
+                    "name": "Video name 4k",
+                    "canplay": 1,
+                    "views_started": "1",
+                    "views": "0",
+                    "length": "20",
+                    "uploaded": "2022-01-23 14:53:53"
+                  },
+                  {
+                    "status": 404,
+                    "filecode": "fheu5klo9012"
+                  }
+                ]
+              }
+              
+
+    API
+    Video list
+
+GET
+https://media.cm/api/file/list?key=key
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+created 	Show only files uploaded after timestamp 	2022-01-23 15:20:15 	STRING 	no
+title 	Filter videos by title 	My video name 	STRING 	no
+page 	Page number 	2 	INT 	no
+per_page 	Number of results per page 	20 	INT 	no
+fld_id 	Videos inside a folder 	17 	INT 	no
+public 	Show public (1) or private (0) files only 	1 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/list?key=1ltghrilhllgrx2b2&page=2&per_page=20&fld_id=17&public=1&created=2022-01-23%2015%3A20%3A15&name=My%20video%20name'
+              
+
+Response
+
+
+{
+  "msg":"OK",
+  "server_time":"2022-02-13 14:07:45",
+  "status":200,
+  "result":
+{
+  "files":[
+{
+  "thumbnail":"https://i.media.cm/irytjmvqwopd_t.jpg",
+  "link":"https://media.cm/jdhtirolnswe",
+  "file_code":"jdhtirolnswe",
+  "canplay":1,
+  "length":"41",
+  "views":"0",
+  "uploaded":"2022-02-12 14:07:45",
+  "public":"0",
+  "fld_id":"0",
+  "title":"My Video"
+  }
+ ],
+  "results_total":9,
+  "pages":4,
+  "results":1
+   }
+ }
+              
+
+    API
+    Rename Video
+
+GET
+https://media.cm/api/file/edit?key=key&file_code=file_code&title=title
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+file_code 	Single/multiple file code 	fheu5klo9dw0,eurjmf9girhw 	STRING 	yes
+file_title 	New video name 	my new video.mp4 	STRING 	no
+file_descr 	Video description 	My video from 2022 	STRING 	no
+file_fld_id 	Folder ID 	8 	INT 	no
+cat_id 	Category ID 	6 	INT 	no
+tags 	Tags list 	today, popular 	STRING 	no
+file_public 	Public flag 	1 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/rename?key=1ltghrilhllgrx2b2file_code=fheu5klo9dw0&title=my%20new%20video.mp4'
+              
+
+Response
+
+
+{
+  "msg": "OK",
+  "server_time": "2022-01-23 15:37:15",
+  "status": 200,
+  "result": [
+{
+  "status": 200,
+   "filecode": "fheu5klo9dw0",
+   "name": "my new video.mp4",
+   "canplay": 1,
+   "views_started": "1",
+   "downloads": "0",
+   "size": "201",
+   "uploaded": "2022-01-23 15:37:15"
+ },
+    {
+   "status": 404,
+   "filecode": "frtg9gher012"
+    }
+  ]
+}
+              
+
+    API
+    Copy Video
+
+GET
+https://media.cm/api/file/copy?key=key&file_code=file_code
+Parameters 	Description 	Example 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+file_code 	Video code 	fheu5klo9dw0 	STRING 	yes
+file_title 	New file title if required 	New video title 	STRING 	no
+fld_id 	Folder id 	17 	STRING 	no
+cURL
+
+
+curl --include \
+'https://media.cm/api/file/copy?key=1ltghrilhllgrx2b2&file_code=fheu5klo9dw0&fld_id=17'
+              
+
+Response
+
+
+              {
+                "msg": "OK",
+                "server_time": "2022-01-23 15:53:56",
+                "status": 200
+              }
+              
+
+    API
+    Delete Video
+
+GET
+https://media.cm/api/file/delete?key=key&del_code=del_code
+Parameters 	Description 	Example 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	yes
+del_code 	File code 	fheu5klo9dw0 	yes
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/delete?key=1ltghrilhllgrx2b2&del_code=fheu5klo9dw0'
+              
+
+Response
+
+
+              {
+                "msg": "OK",
+                "server_time": "2022-01-23 15:53:56",
+                "status": 200
+              }
+              
+
+    API
+    Folder List
+
+Get folder/file list
+https://media.cm/api/folder/list?key=key&fld_id=fld_id
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+fld_id 	Folder ID 	17 	INT 	yes
+files 	Show file list in this folder 	1 	INT 	yes
+cURL example
+
+
+curl --include \
+'https://media.cm/api/folder/list?key=1ltghrilhllgrx2b2&fld_id=17&files=1'
+              
+
+Response
+
+
+{
+   "msg":"OK",
+   "server_time":"2022-01-23 16:11:56",
+   "status":200,
+   "result":{
+   "folders":[
+{
+   "name":"Breaking Bad",
+   "fld_id":"16",
+   "code":"4pwb4yvp7v"
+ },
+{
+   "name":"Travis",
+   "fld_id":"15",
+   "code":"68dth39m76"
+ }
+],
+   "files":[
+{
+   "thumbnail":"https://i.media.cm/54jfke9jfkef.jpg",
+   "link":"https://media.cm/fru8kjfrt9nh",
+   "file_code":"fru8kjfrt9nh",
+   "canplay":1,
+   "length":"4532",
+   "views":"17",
+   "uploaded":"2022-01-23 16:11:56",
+   "public":"0",
+   "fld_id":"0",
+   "title":"my video 4k"
+                    }
+                  ]
+                }
+              }
+              
+
+    API
+    Create Folder
+
+Get
+https://media.cm/api/folder/create?key=key&parent_id=parent_id&name=name
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+name 	Folder name 	New Folder 	STRING 	yes
+parent_id 	Parent folder id 	17 	INT 	no
+descr 	Folder description 	New begin 	STRING 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/folder/create?key=1ltghrilhllgrx2b2&parent_id=17&name=New Folder'
+              
+
+Response
+
+
+
+              {
+                "msg": "OK",
+                "server_time": "2022-01-23 16:24:12",
+                "status": 200,
+                "result": {
+                  "fld_id": "17"
+                }
+              }
+
+              
+
+    API
+    Edit Folder
+
+Get
+https://media.cm/api/folder/rename?key=key&fld_id=fld_id&name=name
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+fld_id 	Folder id 	17 	INT 	yes
+name 	Folder name 	New Folder 	STRING 	no
+parent_id 	Parent folder id 	17 	INT 	no
+descr 	Folder description 	New begin 	STRING 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/folder/rename?key=1ltghrilhllgrx2b2&fld_id=17&name=New%20Folder'
+              
+
+Response
+
+
+{
+   "msg": "OK",
+   "server_time": "2022-01-23 16:24:12",
+   "status": 200,
+   "result": {
+   "result":"true"
+ }
+              
+
+    API
+    Remote upload
+
+GET
+https://media.cm/api/upload/url?key=key&url=url
+
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+url 	URL to video 	https://site.com/video.mkv 	STRING 	yes
+fld_id 	Folder ID 	2 	INT 	no
+cat_id 	Category ID 	6 	INT 	no
+tags 	Tags list 	today, popular 	STRING 	no
+file_public 	Public flag 	1 	INT 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/upload/url?key=1ltghrilhllgrx2b2&url=https://site.com/video.mkv'
+              
+
+Response
+
+
+{
+ "msg": "OK",
+ "server_time": "2022-01-23 04:29:54",
+ "status": 200,
+ "result": {
+ "filecode": "fkrieo7khm8i"
+  }
+}
+              
+
+    API
+    Video transcoding Status
+
+GET
+https://media.cm/api/file/encodings?key=key?code=code
+Parameters 	Description 	Example 	Format 	Required
+key 	API-Key 	1ltghrilhllgrx2b2 	STRING 	yes
+code 	Filter by video code 	fheu5klo9dw0 	STRING 	no
+cURL example
+
+
+curl --include \
+'https://media.cm/api/file/encodings?key=1ltghrilhllgrx2b2?code=fheu5klo9dw0'
+              
+
+Response
+
+
+{
+   "msg":"OK",
+   "server_time":"2022-02-12 19:08:45",
+   "status":200,
+   "result":[
+           {"link":"https://media.cm/fheu5klo9dw0","progress":15,"status":"ENCODING","name":"Test video","quality":"h","code":"fheu5klo9dw0"},
+       ]
+}
+              
