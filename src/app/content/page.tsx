@@ -2,37 +2,47 @@
 
 import { useEffect, useState } from "react";
 
-interface FileItem {
-  name: string;
-  bucket_id: string;
-  owner: string;
-  id: string;
-  updated_at: string;
-  created_at: string;
-  last_accessed_at: string;
-  metadata: Record<string, any>;
+// Media.cm API response interfaces
+interface MediaCmFile {
+  thumbnail: string;
+  link: string;
+  file_code: string;
+  canplay: number;
+  length: string;
+  views: string;
+  uploaded: string;
+  public: string;
+  fld_id: string;
+  title: string;
 }
 
-interface FileWithUrl extends FileItem {
-  publicUrl: string;
-  signedUrl?: string;
-  isDirectVideo?: false;
-}
-
-interface DirectVideo {
-  id: string;
-  name: string;
-  url: string;
-  created_at: string;
-  publicUrl: string;
-  isDirectVideo: true;
-  metadata?: {
-    mimetype?: string;
-    size?: number;
+interface MediaCmResponse {
+  msg: string;
+  server_time: string;
+  status: number;
+  result: {
+    files: MediaCmFile[];
+    results_total: number;
+    pages: number;
+    results: number;
   };
 }
 
-type VideoItem = FileWithUrl | DirectVideo;
+// Updated video item interface for Media.cm
+interface VideoItem {
+  id: string;
+  name: string;
+  thumbnail: string;
+  link: string;
+  canplay: number;
+  length: string;
+  views: string;
+  uploaded: string;
+  public: string;
+  fld_id: string;
+  title: string;
+  publicUrl: string;
+}
 
 export default function ContentPage() {
   const [allVideos, setAllVideos] = useState<VideoItem[]>([]);
@@ -49,163 +59,41 @@ export default function ContentPage() {
     fetchVideos();
   }, []);
 
-  // Convert various video URLs to embeddable format
-  const getEmbedUrl = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-
-      // YouTube URLs
-      if (
-        urlObj.hostname.includes("youtube.com") ||
-        urlObj.hostname.includes("youtu.be")
-      ) {
-        let videoId = "";
-
-        if (urlObj.hostname.includes("youtu.be")) {
-          // Short URL format: https://youtu.be/VIDEO_ID
-          videoId = urlObj.pathname.slice(1);
-        } else if (urlObj.hostname.includes("youtube.com")) {
-          // Long URL format: https://www.youtube.com/watch?v=VIDEO_ID
-          videoId = urlObj.searchParams.get("v") || "";
-        }
-
-        if (videoId) {
-          return `https://www.youtube.com/embed/${videoId}`;
-        }
-      }
-
-      // Yandex Video URLs - return original URL as they require authentication for embedding
-      if (urlObj.hostname.includes("yandex")) {
-        return url;
-      }
-
-      // Vimeo URLs
-      if (urlObj.hostname.includes("vimeo.com")) {
-        const videoId = urlObj.pathname.split("/").pop();
-        if (videoId) {
-          return `https://player.vimeo.com/video/${videoId}`;
-        }
-      }
-
-      // Dailymotion URLs
-      if (urlObj.hostname.includes("dailymotion.com")) {
-        const videoId = urlObj.pathname.split("/video/")[1]?.split("_")[0];
-        if (videoId) {
-          return `https://www.dailymotion.com/embed/video/${videoId}`;
-        }
-      }
-
-      // Twitch URLs
-      if (urlObj.hostname.includes("twitch.tv")) {
-        const videoId = urlObj.pathname.split("/videos/")[1];
-        if (videoId) {
-          return `https://player.twitch.tv/?video=${videoId}&parent=${window.location.hostname}`;
-        }
-      }
-
-      // If no conversion needed or recognized, return original URL
-      return url;
-    } catch (error) {
-      // If URL parsing fails, return original URL
-      return url;
-    }
-  };
-
-  // Check if video should be embedded or opened in new tab
-  const shouldEmbedVideo = (url: string): boolean => {
-    try {
-      const urlObj = new URL(url);
-      // Return false for Yandex videos as they require authentication
-      return !urlObj.hostname.includes("yandex");
-    } catch (error) {
-      return true;
-    }
-  };
-
-  // Get video platform name for display
-  const getVideoPlatform = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-
-      if (
-        urlObj.hostname.includes("youtube.com") ||
-        urlObj.hostname.includes("youtu.be")
-      ) {
-        return "YouTube";
-      }
-      if (urlObj.hostname.includes("yandex")) {
-        return "Yandex Video";
-      }
-      if (urlObj.hostname.includes("vimeo.com")) {
-        return "Vimeo";
-      }
-      if (urlObj.hostname.includes("dailymotion.com")) {
-        return "Dailymotion";
-      }
-      if (urlObj.hostname.includes("twitch.tv")) {
-        return "Twitch";
-      }
-
-      return "External";
-    } catch (error) {
-      return "External";
-    }
-  };
-
-  // Extract video title from URL
-  const getVideoTitle = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-
-      // For YouTube, try to extract from URL parameters or use video ID
-      if (
-        urlObj.hostname.includes("youtube.com") ||
-        urlObj.hostname.includes("youtu.be")
-      ) {
-        let videoId = "";
-
-        if (urlObj.hostname.includes("youtu.be")) {
-          videoId = urlObj.pathname.slice(1);
-        } else if (urlObj.hostname.includes("youtube.com")) {
-          videoId = urlObj.searchParams.get("v") || "";
-        }
-
-        return videoId ? `YouTube Video (${videoId})` : "YouTube Video";
-      }
-
-      // For Yandex Video
-      if (urlObj.hostname.includes("yandex.com")) {
-        const pathParts = urlObj.pathname.split("/");
-        const videoId = pathParts[pathParts.length - 1];
-        return videoId ? `Yandex Video (${videoId})` : "Yandex Video";
-      }
-
-      // For other platforms, use pathname or hostname
-      if (urlObj.hostname.includes("vimeo.com")) {
-        const videoId = urlObj.pathname.split("/").pop();
-        return videoId ? `Vimeo Video (${videoId})` : "Vimeo Video";
-      }
-
-      // Fallback to hostname
-      return urlObj.hostname.replace("www.", "");
-    } catch (error) {
-      return url.split("/").pop()?.split(".")[0] || "Untitled Video";
-    }
-  };
-
+  // Fetch videos from Media.cm API
   const fetchVideos = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/videos");
-      const data = await response.json();
+      // Call Media.cm API to get file list
+      const response = await fetch("/api/mediacm?action=file-list");
+      const data: MediaCmResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch videos");
+        throw new Error(data.msg || "Failed to fetch videos");
       }
 
-      setAllVideos(data.files || []);
+      if (data.status !== 200) {
+        throw new Error(data.msg || "API request failed");
+      }
+
+      // Transform Media.cm response to our VideoItem format
+      const videos: VideoItem[] = data.result.files.map((file) => ({
+        id: file.file_code,
+        name: file.title || file.file_code,
+        thumbnail: file.thumbnail,
+        link: file.link,
+        canplay: file.canplay,
+        length: file.length,
+        views: file.views,
+        uploaded: file.uploaded,
+        public: file.public,
+        fld_id: file.fld_id,
+        title: file.title,
+        publicUrl: file.link,
+      }));
+
+      setAllVideos(videos);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
@@ -215,6 +103,7 @@ export default function ContentPage() {
     }
   };
 
+  // Add video link using Media.cm remote upload
   const addVideoLink = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -223,15 +112,20 @@ export default function ContentPage() {
     try {
       setIsAdding(true);
 
-      const response = await fetch("/api/videos", {
+      const response = await fetch("/api/mediacm?action=remote-upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: newVideoUrl.trim() }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || "Failed to add video link");
+      }
+
+      if (data.status !== 200) {
+        throw new Error(data.msg || "Failed to add video link");
       }
 
       setNewVideoUrl("");
@@ -243,6 +137,7 @@ export default function ContentPage() {
     }
   };
 
+  // Handle file upload to Media.cm
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -275,7 +170,7 @@ export default function ContentPage() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const response = await fetch("/api/videos/upload", {
+      const response = await fetch("/api/mediacm", {
         method: "POST",
         body: formData,
       });
@@ -284,6 +179,10 @@ export default function ContentPage() {
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to upload video");
+      }
+
+      if (data.status !== 200) {
+        throw new Error(data.msg || "Failed to upload video");
       }
 
       // Clear the selected file
@@ -305,11 +204,10 @@ export default function ContentPage() {
     }
   };
 
+  // Delete video from Media.cm
   const deleteVideo = async (video: VideoItem) => {
     // Confirm deletion
-    const confirmMessage = video.isDirectVideo
-      ? `Are you sure you want to delete the video link "${video.name}"?`
-      : `Are you sure you want to delete the video file "${video.name}"? This action cannot be undone.`;
+    const confirmMessage = `Are you sure you want to delete the video "${video.title}"? This action cannot be undone.`;
 
     if (!confirm(confirmMessage)) {
       return;
@@ -319,24 +217,21 @@ export default function ContentPage() {
       setDeletingId(video.id);
       setError(null);
 
-      const params = new URLSearchParams({
-        id: video.id,
-        isDirectVideo: video.isDirectVideo ? "true" : "false",
-      });
-
-      // Add fileName for storage files
-      if (!video.isDirectVideo) {
-        params.append("fileName", video.name);
-      }
-
-      const response = await fetch(`/api/videos?${params}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/mediacm?action=delete&file_code=${video.id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to delete video");
+      }
+
+      if (data.status !== 200) {
+        throw new Error(data.msg || "Failed to delete video");
       }
 
       // Refresh the video list
@@ -366,20 +261,18 @@ export default function ContentPage() {
     });
   };
 
-  const isVideoFile = (file: VideoItem): boolean => {
-    if (file.isDirectVideo) return true;
-    return (
-      file.metadata?.mimetype?.startsWith("video/") ||
-      /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(file.name)
-    );
-  };
+  const formatDuration = (seconds: string): string => {
+    const totalSeconds = parseInt(seconds);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
 
-  const getFileIcon = (file: VideoItem): string => {
-    if (isVideoFile(file)) return "🎬";
-    if (file.metadata?.mimetype?.startsWith("image/")) return "🖼️";
-    if (file.metadata?.mimetype?.startsWith("audio/")) return "🎵";
-    if (file.metadata?.mimetype?.includes("pdf")) return "📄";
-    return "📁";
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
   if (loading) {
@@ -388,7 +281,9 @@ export default function ContentPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-foreground"></div>
-            <p className="mt-3 sm:mt-4 text-base sm:text-lg">Loading videos...</p>
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg">
+              Loading videos from Media.cm...
+            </p>
           </div>
         </div>
       </div>
@@ -421,17 +316,17 @@ export default function ContentPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         <header className="mb-6 sm:mb-8 lg:mb-12">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
-            Video Library
+            Media.cm Video Library
           </h1>
           <p className="text-base sm:text-lg opacity-70">
-            Browse our video collection ({allVideos.length} videos)
+            Browse videos from Media.cm ({allVideos.length} videos)
           </p>
         </header>
 
         {/* Upload Video Form */}
         <div className="mb-4 sm:mb-6 lg:mb-8 p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3 sm:mb-4">
-            Upload Video File
+            Upload Video to Media.cm
           </h2>
           <div className="space-y-3 sm:space-y-4">
             <div>
@@ -485,7 +380,7 @@ export default function ContentPage() {
             Add Video Link
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Supports YouTube, Vimeo, Dailymotion, Twitch and direct video URLs
+            Add videos from external URLs using Media.cm remote upload
           </p>
           <form
             onSubmit={addVideoLink}
@@ -495,7 +390,7 @@ export default function ContentPage() {
               type="url"
               value={newVideoUrl}
               onChange={(e) => setNewVideoUrl(e.target.value)}
-              placeholder="Enter video URL (e.g., https://www.youtube.com/watch?v=k0WfnIRLvr4)"
+              placeholder="Enter video URL (e.g., https://site.com/video.mp4)"
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-foreground text-sm sm:text-base"
               disabled={isAdding}
               required
@@ -527,128 +422,99 @@ export default function ContentPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl lg:text-2xl font-medium mb-2 sm:mb-3">No videos found</h3>
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-medium mb-2 sm:mb-3">
+              No videos found
+            </h3>
             <p className="text-sm sm:text-base opacity-70">
-              No videos are currently available in the library.
+              No videos are currently available in your Media.cm account.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {allVideos.map((file) => (
+            {allVideos.map((video) => (
               <div
-                key={file.id}
+                key={video.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 flex flex-col"
               >
                 {/* Video Preview */}
                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative w-full">
-                  {isVideoFile(file) ? (
-                    file.isDirectVideo ? (
-                      shouldEmbedVideo(file.url) ? (
-                        <div className="relative w-full h-0 pb-[56.25%]">
-                          <iframe
-                            src={getEmbedUrl(file.url)}
-                            className="absolute top-0 left-0 w-full h-full"
-                            frameBorder="0"
-                            scrolling="no"
-                            allowFullScreen
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            loading="lazy"
-                          />
-                        </div>
-                      ) : (
-                        // For non-embeddable videos (like Yandex), show a preview with link
-                        <div className="w-full h-full flex flex-col items-center justify-center p-3 sm:p-4 text-center">
-                          <div className="text-4xl sm:text-5xl lg:text-6xl mb-2 sm:mb-4">
-                            {getFileIcon(file)}
-                          </div>
-                          <p className="text-xs sm:text-sm mb-2">
-                            {getVideoPlatform(file.url)} video
-                          </p>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-foreground text-background px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-opacity-80 transition-colors text-xs sm:text-sm"
-                          >
-                            Open in {getVideoPlatform(file.url)}
-                          </a>
-                        </div>
-                      )
-                    ) : (
-                      <video
-                        className="w-full h-full object-cover"
-                        controls
-                        preload="metadata"
-                        playsInline
-                      >
-                        <source
-                          src={file.publicUrl}
-                          type={file.metadata?.mimetype || "video/mp4"}
-                        />
-                        Your browser does not support the video tag.
-                      </video>
-                    )
+                  {video.thumbnail ? (
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="text-4xl sm:text-5xl lg:text-6xl opacity-50 flex items-center justify-center h-full">
-                      {getFileIcon(file)}
+                      🎬
                     </div>
                   )}
+
+                  {/* Play button overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black bg-opacity-50 rounded-full p-3">
+                      <svg
+                        className="w-8 h-8 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
-                {/* File Info */}
+                {/* Video Info */}
                 <div className="p-3 sm:p-4 flex-1 flex flex-col">
                   <h3
                     className="font-semibold text-sm sm:text-base lg:text-lg mb-2 truncate"
-                    title={
-                      file.isDirectVideo ? getVideoTitle(file.url) : file.name
-                    }
+                    title={video.title}
                   >
-                    {getFileIcon(file)}{" "}
-                    {file.isDirectVideo ? getVideoTitle(file.url) : file.name}
-                    {file.isDirectVideo && (
-                      <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded">
-                        {getVideoPlatform(file.url)}
-                      </span>
-                    )}
+                    🎬 {video.title}
                   </h3>
 
                   <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm opacity-70 flex-1">
-                    {file.metadata?.size && (
+                    {video.length && (
                       <div className="flex justify-between">
-                        <span>Size:</span>
-                        <span>{formatFileSize(file.metadata?.size || 0)}</span>
+                        <span>Duration:</span>
+                        <span>{formatDuration(video.length)}</span>
                       </div>
                     )}
 
                     <div className="flex justify-between">
-                      <span>Type:</span>
-                      <span className="truncate ml-2">
-                        {file.isDirectVideo
-                          ? getVideoPlatform(file.url)
-                          : file.metadata?.mimetype || "video/mp4"}
+                      <span>Views:</span>
+                      <span>{video.views}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span
+                        className={
+                          video.canplay ? "text-green-600" : "text-yellow-600"
+                        }
+                      >
+                        {video.canplay ? "Ready" : "Processing"}
                       </span>
                     </div>
 
                     <div className="flex justify-between">
-                      <span>Created:</span>
-                      <span>{formatDate(file.created_at)}</span>
+                      <span>Uploaded:</span>
+                      <span>{formatDate(video.uploaded)}</span>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="mt-3 sm:mt-4 flex gap-2">
                     <a
-                      href={file.publicUrl}
+                      href={video.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 bg-foreground text-background text-center py-1.5 sm:py-2 px-3 sm:px-4 rounded text-xs sm:text-sm font-medium hover:bg-opacity-80 transition-colors"
                     >
-                      {file.isDirectVideo ? "Open Original" : "Open Video"}
+                      Watch Video
                     </a>
                     <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(file.publicUrl)
-                      }
+                      onClick={() => navigator.clipboard.writeText(video.link)}
                       className="p-1.5 sm:p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       title="Copy URL"
                     >
@@ -667,12 +533,12 @@ export default function ContentPage() {
                       </svg>
                     </button>
                     <button
-                      onClick={() => deleteVideo(file)}
-                      disabled={deletingId === file.id}
+                      onClick={() => deleteVideo(video)}
+                      disabled={deletingId === video.id}
                       className="p-1.5 sm:p-2 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete Video"
                     >
-                      {deletingId === file.id ? (
+                      {deletingId === video.id ? (
                         <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <svg
