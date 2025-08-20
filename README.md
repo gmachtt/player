@@ -1,26 +1,5 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Media.cm Integration
-
-This project includes integration with Media.cm for video hosting and management. Videos uploaded through the upload page are stored in your Media.cm account and can be browsed in the content page.
-
-### Setup
-
-1. Get your Media.cm API key from your account dashboard
-2. Create a `.env.local` file in the root directory with:
-   ```bash
-   MEDIACM_API_KEY=your_media_cm_api_key_here
-   ```
-3. Restart your development server
-
-### Features
-
-- **Upload Videos**: Upload video files directly to Media.cm
-- **Add Video Links**: Add videos from external URLs using Media.cm remote upload
-- **Browse Library**: View all videos in your Media.cm account
-- **Delete Videos**: Remove videos from your Media.cm account
-- **Video Thumbnails**: Automatic thumbnail generation for uploaded videos
-
 ## Getting Started
 
 First, run the development server:
